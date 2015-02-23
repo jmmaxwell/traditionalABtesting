@@ -8,10 +8,10 @@ shinyUI(navbarPage("Web Testing", id = "nav",
            
     sidebarLayout(sidebarPanel(
       
-      numericInput("conversionsControl", label = h5("Control Group Conversions"), value = 0),
-      numericInput("conversionsTest", label = h5("Test Group Conversions"), value = 0),
-      numericInput("observationsControl", label = h5("Control Group Observations"), value = 1),
-      numericInput("observationsTest", label = h5("Test Group Observations"), value = 1),
+      numericInput("conversionsControl", label = h5("Control Group Conversions"), value = 100),
+      numericInput("conversionsTest", label = h5("Test Group Conversions"), value = 100),
+      numericInput("observationsControl", label = h5("Control Group Observations"), value = 1000),
+      numericInput("observationsTest", label = h5("Test Group Observations"), value = 1000),
       numericInput("numOfTestGroups", label = h5("Number of Test Groups"), value = 1)
       
     ),
@@ -37,14 +37,22 @@ shinyUI(navbarPage("Web Testing", id = "nav",
   tabPanel("Data",
            
     fluidRow(
-      fileInput("data", label = h4("Upload Data as CSV"))
+      fileInput("itemData", label = h4("Upload Item Data as CSV"))
       ),
     
     fluidRow(
-      dataTableOutput(outputId="table")
-      )       
+      dataTableOutput(outputId="itemTable")
+      ),
+    
+    fluidRow(
+      fileInput("userData", label = h4("upload User Data as CSV"))
+      ),
+    
+    fluidRow(
+      dataTableOutput(outputId = "userTable")
+      )
   ),
-  
+    
   tabPanel("Profitability"
              
   )

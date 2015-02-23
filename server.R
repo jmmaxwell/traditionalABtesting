@@ -28,7 +28,7 @@ shinyServer(function(input, output) {
   
   output$testEstimate <- renderText({
     
-    paste0('The difference in proportions is: ', round(results()$estimate[1] - results()$estimate[2], 4))
+    paste0('The difference in proportions is: ', round(results()$estimate[2] - results()$estimate[1], 4))
     
   })
   
@@ -45,24 +45,47 @@ shinyServer(function(input, output) {
   
   ## Data ##
   
-  data <- reactive({
+  #item
+  
+  itemData <- reactive({
     
-    dataFile <- input$data
+    itemDataFile <- input$itemData
     
-    if (is.null(dataFile))
+    if (is.null(itemDataFile))
       return(NULL)
     
-    read.csv(dataFile$datapath)
+    read.csv(itemDataFile$datapath)
     
   })
   
-  output$table <- renderDataTable({
+  output$itemTable <- renderDataTable({
     
-    data()
+    itemData()
+    
+  })
+  
+  #user
+  
+  userData <- reactive({
+    
+    userDataFile <- input$userData
+    
+    if (is.null(userDataFile))
+      return(NULL)
+    
+    read.csv(userDataFile$datapath)
+    
+  })
+  
+  output$userTable <- renderDataTable({
+    
+    userData()
     
   })
   
   #########
+  
+  ## profitability ##
   
   
   
