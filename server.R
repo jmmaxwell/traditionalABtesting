@@ -28,7 +28,7 @@ shinyServer(function(input, output) {
   
   output$testEstimate <- renderText({
     
-    paste0('The difference in proportions is: ', round(results()$estimate[1] - results()$estimate[2], 4))
+    paste0('The difference in proportions is: ', round(results()$estimate[2] - results()$estimate[1], 4))
     
   })
   
