@@ -41,8 +41,6 @@ shinyServer(function(input, output) {
   
   #####################
   
-  
-  
   ## Data ##
   
   #item
@@ -58,11 +56,6 @@ shinyServer(function(input, output) {
     
   })
   
-  output$itemTable <- renderDataTable({
-    
-    itemData()
-    
-  })
   
   #user
   
@@ -77,16 +70,18 @@ shinyServer(function(input, output) {
     
   })
   
-  output$userTable <- renderDataTable({
-    
-    userData()
-    
-  })
   
-  #########
+  #####################
   
   ## profitability ##
   
-  
+  output$names <- renderText({
+    
+    if (is.null(input$itemData))
+      return('No Data')
+    
+    names(itemData())
+    
+  })
   
 })

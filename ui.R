@@ -40,20 +40,16 @@ shinyUI(navbarPage("Web Testing", id = "nav",
       fileInput("itemData", label = h4("Upload Item Data as CSV"))
       ),
     
-    fluidRow(
-      dataTableOutput(outputId="itemTable")
-      ),
     
     fluidRow(
       fileInput("userData", label = h4("upload User Data as CSV"))
-      ),
-    
-    fluidRow(
-      dataTableOutput(outputId = "userTable")
       )
+    
   ),
     
   tabPanel("Profitability"
+    
+    #http://shiny.rstudio.com/gallery/update-input-demo.html got to do this on server side see example   
              
   )
 
