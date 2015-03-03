@@ -1,6 +1,7 @@
 
 
 library(shiny)
+library(ggplot2)
 
 shinyUI(navbarPage("Web Testing", id = "nav",
                    
@@ -35,19 +36,7 @@ shinyUI(navbarPage("Web Testing", id = "nav",
   ),
   
   tabPanel("Data",
-    
-<<<<<<< HEAD
-    
-    fluidRow(
-      fileInput("userData", label = h4("upload User Data as CSV"))
-      )
-    
-  ),
-    
-  tabPanel("Profitability"
-    
-    #http://shiny.rstudio.com/gallery/update-input-demo.html got to do this on server side see example   
-=======
+
     sidebarLayout(sidebarPanel(
       
         fluidRow(
@@ -88,8 +77,7 @@ shinyUI(navbarPage("Web Testing", id = "nav",
       plotOutput("profitPlot")
       
       )
->>>>>>> 0a6ae43b4d7a946ff53966028a47d1d802cab96b
-             
+
   )
 
 ))

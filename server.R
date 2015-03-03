@@ -10,6 +10,7 @@ nameListUser = c("X", "alt", "id")
 
 library(shiny)
 library(dplyr)
+library(ggplot2)
 
 shinyServer(function(input, output) {
   
@@ -61,8 +62,7 @@ shinyServer(function(input, output) {
     
   })
   
-<<<<<<< HEAD
-=======
+
   errorCheck <- reactive({
     
     if(is.null(itemData())){
@@ -82,8 +82,7 @@ shinyServer(function(input, output) {
      errorCheck()   
      
   })
->>>>>>> 0a6ae43b4d7a946ff53966028a47d1d802cab96b
-  
+
   #user
   
   userData <- reactive({
@@ -97,8 +96,7 @@ shinyServer(function(input, output) {
     
   })
   
-<<<<<<< HEAD
-=======
+
   errorCheckUser <- reactive({
     
     if(is.null(userData())){
@@ -118,18 +116,17 @@ shinyServer(function(input, output) {
     errorCheckUser()   
     
   })
->>>>>>> 0a6ae43b4d7a946ff53966028a47d1d802cab96b
-  
+
   #####################
   
   ## profitability ##
 
   userItemData <- reactive({
     
-    if(!is.null(userData() & !is.null(itemData()))){
-      
       userData <- userData()
       itemData <- itemData()
+    
+    if(nameList %in% names(userData) & nameListUser %in% names(itemData)){
       
       userData %>%
         left_join(itemData, by = c("id", "alt")) %>%
@@ -149,7 +146,6 @@ shinyServer(function(input, output) {
     
   })
   
-<<<<<<< HEAD
   output$names <- renderText({
     
     if (is.null(input$itemData))
@@ -158,18 +154,24 @@ shinyServer(function(input, output) {
     names(itemData())
     
   })
-=======
+
   output$profitPlot <- renderPlot({
     
     userItemData <- userItemData()
     
-    ggplot(userItemData, aes(x = alt, y = totalProfit, fill = alt)) + 
-      geom_bar(stat = "identity")
+    if (!is.null(userItemData)){
+      
+      ggplot(userItemData, aes(x = alt, y = totalProfit, fill = alt)) + 
+        geom_bar(stat = "identity")
+      
+    } else {
+      return(NULL)
+    }
+
     
   })
   
->>>>>>> 0a6ae43b4d7a946ff53966028a47d1d802cab96b
-  
+
 })
 
 
