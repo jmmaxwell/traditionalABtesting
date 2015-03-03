@@ -35,25 +35,47 @@ shinyUI(navbarPage("Web Testing", id = "nav",
   ),
   
   tabPanel("Data",
-           
-    fluidRow(
-      fileInput("itemData", label = h4("Upload Item Data as CSV"))
+    
+    sidebarLayout(sidebarPanel(
+      
+        fluidRow(
+          fileInput("itemData", label = h4("Upload Item Data as CSV"))
+        ),
+        
+        
+        fluidRow(
+          fileInput("userData", label = h4("upload User Data as CSV"))
+        )
+      
       ),
     
-    fluidRow(
-      dataTableOutput(outputId="itemTable")
+    mainPanel(
+      
+      h3("Item Data:"),
+      hr(),
+      fluidRow(
+        textOutput("errorCheck")
       ),
-    
-    fluidRow(
-      fileInput("userData", label = h4("upload User Data as CSV"))
-      ),
-    
-    fluidRow(
-      dataTableOutput(outputId = "userTable")
+      
+      hr(),
+      h3("User Data:"),
+      hr(),
+      fluidRow(
+        textOutput("errorCheckUser")  
       )
+      
+    )
+  )  
+    
   ),
     
-  tabPanel("Profitability"
+  tabPanel("Profitability",
+           
+    fluidRow(
+      
+      plotOutput("profitPlot")
+      
+      )
              
   )
 
@@ -63,9 +85,12 @@ shinyUI(navbarPage("Web Testing", id = "nav",
 # testData = data.frame(alt = c(rep("a", 10), rep("b", 10), rep("c", 10)),
 #                       costs = runif(30),
 #                       revenue = runif(30, min = 1, max = 2),
-#                       weight = sample(1:100, 30)
-#                       )
+#                       weight = sample(1:100, 30),
+#                       id = 1:30)
+#                       
 # write.csv(testData, file = "testData.csv")
-
-
-
+# 
+# testDataUser = data.frame(id = 1:312, 
+#                           alt = c(rep("a", 10), rep("b", 10), rep("c", 10), 
+#                                   sample(c("a", "b", "c"), (312-30), replace = T)))
+# write.csv(testDataUser, file = "testDataUser.csv")
