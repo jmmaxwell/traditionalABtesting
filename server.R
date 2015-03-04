@@ -1,15 +1,9 @@
-
-# This is the server logic for a Shiny web application.
-# You can find out more about building applications with Shiny here:
-#
-# http://shiny.rstudio.com
-#
-
-nameList = c("X", "alt", "costs", "revenue", "weight", "id")
-nameListUser = c("X", "alt", "id")
+nameList = c("X", "alt", "idOrder", "idItem", "costs", "revenue", "weight", "idAccount")
+nameListUser = c("X", "alt", "idAccount")
 
 library(shiny)
 library(dplyr)
+library(ggplot2)
 
 shinyServer(function(input, output) {
   
@@ -20,14 +14,14 @@ shinyServer(function(input, output) {
     prop.test(c(input$conversionsControl, input$conversionsTest),
               c(input$observationsControl, input$observationsTest),
               conf.level = 1 - (.05/input$numOfTestGroups))
-  
-    })
+    
+  })
   
   output$testPvalue <- renderText({
-  
+    
     paste0('The p-value is: ', 
            ifelse(results()$p.value < 0.00001, "less than 1e-5", round(results()$p.value, 5)*input$numOfTestGroups))
-  
+    
   })
   
   output$testEstimate <- renderText({
@@ -45,8 +39,6 @@ shinyServer(function(input, output) {
   
   #####################
   
-  
-  
   ## Data ##
   
   #item
@@ -59,9 +51,10 @@ shinyServer(function(input, output) {
       return(NULL)
     
     read.csv(itemDataFile$datapath)
-  
+    
     
   })
+  
   
   errorCheck <- reactive({
     
@@ -79,8 +72,8 @@ shinyServer(function(input, output) {
   
   output$errorCheck <- renderText({
     
-     errorCheck()   
-     
+    errorCheck()   
+    
   })
   
   #user
@@ -95,6 +88,7 @@ shinyServer(function(input, output) {
     read.csv(userDataFile$datapath)
     
   })
+  
   
   errorCheckUser <- reactive({
     
@@ -116,19 +110,19 @@ shinyServer(function(input, output) {
     
   })
   
-  #########
+  #####################
   
   ## profitability ##
-
+  
   userItemData <- reactive({
     
-    if(!is.null(userData() & !is.null(itemData()))){
-      
-      userData <- userData()
-      itemData <- itemData()
+    userData <- userData()
+    itemData <- itemData()
+    
+    if(nameList %in% names(userData) & nameListUser %in% names(itemData)){
       
       userData %>%
-        left_join(itemData, by = c("id", "alt")) %>%
+        left_join(itemData, by = c("idAccount", "alt")) %>%
         mutate(costs = ifelse(is.na(costs), 0, costs)) %>%
         mutate(revenue = ifelse(is.na(revenue), 0, revenue)) %>%
         mutate(profit = revenue - costs) %>%
@@ -145,16 +139,30 @@ shinyServer(function(input, output) {
     
   })
   
+  output$names <- renderText({
+    
+    if (is.null(input$itemData))
+      return('No Data')
+    
+    names(itemData())
+    
+  })
+  
   output$profitPlot <- renderPlot({
     
     userItemData <- userItemData()
     
-    ggplot(userItemData, aes(x = alt, y = totalProfit, fill = alt)) + 
-      geom_bar(stat = "identity")
+    if (!is.null(userItemData)){
+      
+      ggplot(userItemData, aes(x = alt, y = totalProfit, fill = alt)) + 
+        geom_bar(stat = "identity")
+      
+    } else {
+      return(NULL)
+    }
+    
     
   })
   
   
 })
-
-
