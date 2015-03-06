@@ -54,12 +54,17 @@ shinyUI(navbarPage("Web Testing", id = "nav",
       
       h3("Item Data:"),
       hr(),
+      h5("Variable names must match the following exactly: idInventory, Alt, idorder, billingAddress1, shipAddress1, soldPrice, 
+         shipPrice, date, trackingIdentifier, tbWeight, methodInternal, shipCost, idShipment"),
+      hr(),
       fluidRow(
         textOutput("errorCheck")
       ),
       
       hr(),
       h3("User Data:"),
+      hr(),
+      h5("Variable names must match the following exactly: Alt, trackingIdentifier, date"),
       hr(),
       fluidRow(
         textOutput("errorCheckUser")  
@@ -82,11 +87,14 @@ shinyUI(navbarPage("Web Testing", id = "nav",
       hr(),
       numericInput("weightBasedCost", label = h5("Enter cost per 1/100th lb"), value = 0.0015)
       
+      
       ),
     
     mainPanel(
       
-      plotOutput("summaryPlot")
+      plotOutput("profitPerUserPlot"),
+      hr(),
+      dataTableOutput("tTester")
       
       )
     
@@ -95,25 +103,22 @@ shinyUI(navbarPage("Web Testing", id = "nav",
   
   tabPanel("Summary",
            
-    fluidRow(
-      dataTableOutput(outputId = 'summaryTable')         
+    sidebarLayout(sidebarPanel(
+      
+      downloadButton('downloadData', 'Download')
+      
+    ),
+    
+  mainPanel(  
+    
+    dataTableOutput(outputId = 'summaryTable')
+    
+    # put download option here
+    
     )
-  )
-                   
+  
+  ))
+  
 ))
 
 
-# testData = data.frame(alt = c(rep("a", 5), rep("b", 5), rep("c", 5), rep("a", 5), rep("b", 5), rep("c", 5)),
-#                       idOrder = sample(1:20, 30, replace = T),
-#                       idItem = c(1:30),
-#                       costs = runif(30),
-#                       revenue = runif(30, min = 1, max = 2),
-#                       weight = sample(1:100, 30),
-#                       idAccount = c(1:5, 11:15, 21:25, 1:5, 11:15, 21:25))
-#                       
-# write.csv(testData, file = "testData.csv")
-# 
-# testDataUser = data.frame(idAccount = 1:312, 
-#                           alt = c(rep("a", 10), rep("b", 10), rep("c", 10), 
-#                                   sample(c("a", "b", "c"), (312-30), replace = T)))
-# write.csv(testDataUser, file = "testDataUser.csv")

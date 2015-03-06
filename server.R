@@ -1,14 +1,15 @@
-nameList = c("idInventory", "Alt", "idorder", "billingAddress1", "shipAddress1", "billingName", 
-             "shipFirstName", "soldPrice", "shipPrice", "date", "trackingIdentifier", "tbWeight", 
-             "salesRank", "methodInternal", "shipCost", "idShipment")
+nameList = c("idInventory", "Alt", "idorder", "billingAddress1", "shipAddress1","soldPrice",
+             "shipPrice", "date", "trackingIdentifier", "tbWeight", "methodInternal", 
+             "shipCost", "idShipment")
 nameListUser = c("Alt", "trackingIdentifier", "date")
 
 library(shiny)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
+library(data.table)
 
-options(shiny.maxRequestSize=30*1024^2)
+options(shiny.maxRequestSize=50*1024^2)
 
 shinyServer(function(input, output) {
   
@@ -122,22 +123,21 @@ shinyServer(function(input, output) {
   
   ## add some data error handling (e.g. nulls, making sure variables are the correct format, etc)
   
-  nonDropShippers <- reactive({
+  DropShippers <- reactive({
   
       itemData <- itemData()
     
     if(!is.null(itemData)){
       
       itemData %>%
-        mutate(possibleDropShipper = ifelse(billingAddress1 == shipAddress1, 0, 1)) %>%
         group_by(trackingIdentifier, Alt, day(date)) %>%
-        summarise(ordersPerUser = n_distinct(idorder), possibleDropShipper = max(possibleDropShipper)) %>%
+        summarise(ordersPerUser = n_distinct(idorder)) %>%
         group_by(trackingIdentifier) %>%
-        summarise(dailyOrders = mean(ordersPerUser), possibleDropShipper = mean(possibleDropShipper)) %>%
-        filter(dailyOrders < 1.1, possibleDropShipper == 0) %>%
-        select(trackingIdentifier) -> nonDropShippers
+        summarise(dailyOrders = mean(ordersPerUser)) %>%
+        filter(dailyOrders >= 1.1) %>%
+        select(trackingIdentifier) -> DropShippers
       
-      return(nonDropShippers)
+      return(DropShippers)
       
     } else {
       
@@ -178,7 +178,7 @@ shinyServer(function(input, output) {
   filteredItemData <- reactive({
     
     itemData <- itemData()
-    nonDropShippers <- nonDropShippers()
+    DropShippers <- DropShippers()
     lastDay <- lastDay()
     
     if (is.null(itemData)){
@@ -191,14 +191,13 @@ shinyServer(function(input, output) {
       itemData$shipPrice <- as.numeric(itemData$shipPrice)
       itemData$date <- as.POSIXct(itemData$date)
       itemData$tbWeight <- as.numeric(itemData$tbWeight)
-      itemData$salesRank <- as.numeric(itemData$salesRank)
       itemData$shipCost <- as.numeric(itemData$shipCost)
       
       if (!(input$includeDropShip | input$includeNonShipped)){
         
        itemData %>%
-          filter(trackingIdentifier %in% nonDropShippers$trackingIdentifier,
-                 as.Date(date) <= lastDay) -> filteredItemData
+          filter(!(trackingIdentifier %in% DropShippers$trackingIdentifier),
+                 as.Date(date) <= lastDay + 1) -> filteredItemData
         
         return(filteredItemData)
         
@@ -207,7 +206,7 @@ shinyServer(function(input, output) {
         if (!input$includeDropShip) {
           
           itemData %>%
-            filter(trackingIdentifier %in% nonDropShippers$trackingIdentifier) -> filteredItemData
+            filter(!(trackingIdentifier %in% DropShippers$trackingIdentifier)) -> filteredItemData
           
           return(filteredItemData)
           
@@ -216,7 +215,7 @@ shinyServer(function(input, output) {
           if (!input$includeNonShipped){
             
             itemData %>%
-              filter(date <= lastDay + 1) -> filteredItemData
+              filter(as.Date(date) <= lastDay + 1) -> filteredItemData
             
             return(filteredItemData)
             
@@ -240,7 +239,7 @@ shinyServer(function(input, output) {
   filteredUserData <- reactive({
     
     userData <- userData()
-    nonDropShippers <- nonDropShippers()
+    DropShippers <- DropShippers()
     lastDay <- lastDay()
     
     if (is.null(userData)){
@@ -254,8 +253,8 @@ shinyServer(function(input, output) {
       if (!input$includeDropShip & !input$includeNonShipped){
         
         userData %>%
-          filter(trackingIdentifier %in% nonDropShippers$trackingIdentifier,
-                 date <= lastDay + 1) -> filteredUserData
+          filter(!(trackingIdentifier %in% DropShippers$trackingIdentifier),
+                 as.Date(date) <= lastDay + 1) -> filteredUserData
         
         return(filteredUserData)
         
@@ -264,7 +263,7 @@ shinyServer(function(input, output) {
         if (!input$includeDropShip) {
           
           userData %>%
-            filter(trackingIdentifier %in% nonDropShippers$trackingIdentifier) -> filteredUserData
+            filter(!(trackingIdentifier %in% DropShippers$trackingIdentifier)) -> filteredUserData
           
           return(filteredUserData)
           
@@ -273,7 +272,7 @@ shinyServer(function(input, output) {
           if (!input$includeNonShipped){
             
             userData %>%
-              filter(date <= lastDay + 1) -> filteredUserData
+              filter(as.Date(date) <= lastDay + 1) -> filteredUserData
             
             return(filteredUserData)
             
@@ -354,6 +353,17 @@ shinyServer(function(input, output) {
   })
   
   
+  output$downloadData <- downloadHandler(
+    filename = function() { 
+      paste('summaryData', Sys.Date(),'.csv', sep='') 
+    },
+    content = function(file) {
+      write.csv(summaryData(), file)
+    } 
+    
+  )
+  
+  
   output$summaryTable <- renderDataTable({
     
     if(!is.null(summaryData())){
@@ -368,22 +378,137 @@ shinyServer(function(input, output) {
     
   })
   
-  ##### plots:
+  ##### t-tests:
   
-
+  profitPerUser <- reactive({
+    
+    if (is.null(filteredUserData())) {
+      
+      return(NULL)
+      
+    } else {
+    
+      filteredUserData <- filteredUserData()
+      filteredItemData <- filteredItemData()
+      
+      weightCost <- input$weightBasedCost
+      itemCost <- input$perItemCost
+      
+      filteredUserData %>%
+        group_by(trackingIdentifier) %>%
+        summarise(Alt = max(Alt)) %>%
+        filter(trackingIdentifier != "") %>%
+        select(trackingIdentifier, Alt) -> uniqueUsers
+      
+      filteredItemData %>%
+        mutate(revenue = (soldPrice + shipPrice), cost = (tbWeight * weightCost + itemCost)) %>% 
+        mutate(profit = revenue - cost) %>%
+        group_by(trackingIdentifier, Alt) %>%
+        summarise(userProfit = sum(profit, na.rm = T)) %>%
+        filter(trackingIdentifier != "") -> profitData
+      
+      uniqueUsers %>%
+        left_join(profitData, by = c("trackingIdentifier", "Alt")) %>%
+        mutate(profit = ifelse(is.na(userProfit), 0, userProfit)) %>%
+        select(trackingIdentifier, Alt, profit) -> profitPerUser
+      
+      return(profitPerUser)
+      
+    }
+      
+  })
+  
+  
+  plotData <- reactive({
+    
+    if (!is.null(profitPerUser())) {
+      
+      profitPerUser() %>%
+      group_by(Alt) %>%
+      summarise(avgProfitPerUser = mean(profit, na.rm = T)) -> plotData
+      
+      return(plotData)
+      
+    } else {
+      
+      return(NULL)
+      
+    }
+  
+  })
+  
+  
+  output$profitPerUserPlot <- renderPlot({
+    
+    if (is.null(plotData())) {
+      
+      return(NULL)
+      
+    } else {
+      
+      ggplot(plotData(), aes(x = Alt, y = avgProfitPerUser, fill = Alt)) + geom_bar(stat = "identity")
+      
+    }
+  
+  })
+  
+  
+  output$tTester <- renderDataTable({
+    
+    if (is.null(profitPerUser())) {
+      
+      return(NULL)
+      
+    } else {
+      
+      
+      profitPerUser <- profitPerUser()
+    
+    names <- unique(itemData()$Alt)
+    
+    grid <- expand.grid(names, names, stringsAsFactors = FALSE)
+    grid <- grid[!(grid$Var1 == grid$Var2),]
+    
+    Ttester <- function(row){
+      
+      profitPerUser %>%
+        filter(Alt == grid$Var1[row]) %>%
+        select(profit) -> testGroup1
+      
+      profitPerUser %>%
+        filter(Alt == grid$Var2[row]) %>%
+        select(profit) -> testGroup2
+      
+      results <- t.test(testGroup1$profit, testGroup2$profit)
+      
+      pvalue <- results$p.value
+      confint <- results$conf.int
+      difference <- results$estimate
+      
+      data <- data.frame(group1       = grid$Var1[row],
+                         group2       = grid$Var2[row],
+                         pvalue       = pvalue,
+                         confintLower = confint[1],
+                         confintUpper = confint[2],
+                         difference   = difference)
+    return(data)
+      
+    }
+    
+    bigList <- lapply(X = (1:nrow(grid)), FUN = Ttester)
+  
+    output <- rbindlist(bigList)
+    
+    output <- data.table(output)
+    
+    return(output)
+      
+    }
+    
+    
+  })
+  
+  
+  
 })
-
-# itemData <- read.csv("C://tbR//CSVs//itemData.csv", stringsAsFactors = F)
-# userData <- read.csv("C://tbR//CSVs//userData.csv", stringsAsFactors = F)
-# 
-# read.table("C://tbR//CSVs//testData.txt")
-# itemData %>%
-#   mutate(hasShipCost = ifelse(is.na(as.numeric(shipCost)), 0, 1)) %>%
-#   group_by(day = as.Date(date)) %>%
-#   summarise(propShipped = mean(hasShipCost)) %>%
-#   filter(propShipped >= .9)
-# 
-# ggplot(shipCostScatter, aes(x = as.POSIXct(date), y = 1, color = hasShipCost)) + 
-#   geom_point() + 
-#   geom_jitter(position = "jitter") # cut off at date > ebd feb 9
 
